@@ -57,5 +57,7 @@ jobs:
             -DDYNARMIC_FRONTENDS=A32 \
             -DDYNARMIC_USE_BUNDLED_EXTERNALS=ON \
             -DDYNARMIC_TESTS=OFF \
-            -DDYNARMIC_USE_PRECOMPILED_HEADERS=OFF
+            -DDYNARMIC_USE_PRECOMPILED_HEADERS=OFF \
+            -DBoost_ROOT="$(brew --prefix boost)" \
+            -DBoost_INCLUDE_DIR="$(brew --prefix boost)/include" 
           cmake --build /tmp/dynarmic-ios-build --target dynarmic -j2
