@@ -2,8 +2,6 @@ name: iOS Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
   build:
@@ -19,12 +17,22 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build iOS Simulator app
+      - name: Build iOS Simulator
         run: |
           xcodebuild \
             -project TDKRiOS.xcodeproj \
             -scheme TDKRiOS \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Build iPhone ARM64
+        run: |
+          xcodebuild \
+            -project TDKRiOS.xcodeproj \
+            -scheme TDKRiOS \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
