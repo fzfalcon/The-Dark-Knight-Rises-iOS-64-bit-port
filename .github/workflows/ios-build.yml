@@ -43,6 +43,9 @@ jobs:
           git -C /tmp/dynarmic checkout a46601580d5512d324104f985b5f0209dc980ddc
           git -C /tmp/dynarmic submodule update --init --recursive
 
+      - name: Install Dynarmic dependencies
+        run: brew install boost
+
       - name: Build Dynarmic for iPhone
         run: |
           cmake -S /tmp/dynarmic -B /tmp/dynarmic-ios-build \
