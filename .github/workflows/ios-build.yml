@@ -61,3 +61,10 @@ jobs:
             -DBoost_ROOT="$(brew --prefix boost)" \
             -DBoost_INCLUDE_DIR="$(brew --prefix boost)/include" 
           cmake --build /tmp/dynarmic-ios-build --target dynarmic -j2
+               
+      - name: Upload Dynarmic library
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynarmic-ios-arm64
+          path: /tmp/dynarmic-ios-build/src/dynarmic/libdynarmic.a
+          if-no-files-found: error
