@@ -11,8 +11,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install build tools
+        run: brew install xcodegen boost
+
+      - name: Checkout Dynarmic
+        run: |
+          git clone https://github.com/azahar-emu/dynarmic.git /tmp/dynarmic
+          git -C /tmp/dynarmic checkout a46601580d5512d324104f985b5f0209dc980ddc
+          git -C /tmp/dynarmic submodule update --init --recursive
+
+      - name: Build Dynarmic for iPhone ARM64
+        run: |
+          cmake -S /tmp/dynarmic -B /tmp/dynarmic-ios-build \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DDYNARMIC_FRONTENDS=A32 \
+            -DDYNARMIC_USE_BUNDLED_EXTERNALS=ON \
+            -DDYNARMIC_TESTS=OFF \
+            -DDYNARMIC_USE_PRECOMPILED_HEADERS=OFF \
+            -DBoost_ROOT="$(brew --prefix boost)" \
+            -DBoost_INCLUDE_DIR="$(brew --prefix boost)/include"
+
+          cmake --build /tmp/dynarmic-ios-build --target dynarmic -j2
+
+      - name: Package Dynarmic build outputs
+        run: |
+          mkdir -p /tmp/dynarmic-package
+          cp /tmp/dynarmic-ios-build/src/dynarmic/libdynarmic.a \
+            /tmp/dynarmic-package/
+          cp -R /tmp/dynarmic/src/dynarmic/interface \
+            /tmp/dynarmic-package/interface
+          cp -R /tmp/dynarmic/src/dynarmic/common \
+            /tmp/dynarmic-package/common
+          cp -R /tmp/dynarmic/src/dynarmic/ir \
+            /tmp/dynarmic-package/ir
+          cp -R /tmp/dynarmic/src/dynarmic/frontend \
+            /tmp/dynarmic-package/frontend
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -37,34 +74,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Checkout Dynarmic
-        run: |
-          git clone https://github.com/azahar-emu/dynarmic.git /tmp/dynarmic
-          git -C /tmp/dynarmic checkout a46601580d5512d324104f985b5f0209dc980ddc
-          git -C /tmp/dynarmic submodule update --init --recursive
-
-      - name: Install Dynarmic dependencies
-        run: brew install boost
-
-      - name: Build Dynarmic for iPhone
-        run: |
-          cmake -S /tmp/dynarmic -B /tmp/dynarmic-ios-build \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DCMAKE_OSX_SYSROOT=iphoneos \
-            -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DDYNARMIC_FRONTENDS=A32 \
-            -DDYNARMIC_USE_BUNDLED_EXTERNALS=ON \
-            -DDYNARMIC_TESTS=OFF \
-            -DDYNARMIC_USE_PRECOMPILED_HEADERS=OFF \
-            -DBoost_ROOT="$(brew --prefix boost)" \
-            -DBoost_INCLUDE_DIR="$(brew --prefix boost)/include" 
-          cmake --build /tmp/dynarmic-ios-build --target dynarmic -j2
-               
-      - name: Upload Dynarmic library
+      - name: Upload Dynarmic integration files
         uses: actions/upload-artifact@v4
         with:
           name: dynarmic-ios-arm64
-          path: /tmp/dynarmic-ios-build/src/dynarmic/libdynarmic.a
+          path: /tmp/dynarmic-package/
           if-no-files-found: error
